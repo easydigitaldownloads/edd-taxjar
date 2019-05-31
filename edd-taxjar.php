@@ -50,6 +50,9 @@ class EDD_TaxJar {
 		add_filter( 'edd_settings_taxes', array( $this, 'settings' ) );
 		add_filter( 'edd_tax_rate', array( $this, 'get_tax_rate' ) );
 		add_action( 'edd_payment_saved', array( $this, 'store_taxjar_data_on_payment' ), 10, 2 );
+		add_action( 'edd_update_payment_status', array( $this, 'create_order' ), 10, 3 );
+		add_action( 'edd_update_payment_status', array( $this, 'refund_order' ), 10, 3 );
+		add_action( 'edd_payment_delete', array( $this, 'delete_order' ), 10 );
 
 		$this->load_sdk();
 	}
@@ -229,6 +232,124 @@ class EDD_TaxJar {
 		}
 
 	}
+
+	/**
+	 * Send a completed order to TaxJar
+	 *
+	 * @since  1.1
+	 * @param  int    $payment_id The ID of the payment on which to store the tax jar data.
+	 * @param  string $status The new status of the payment
+	 * @param  string $old_status The previous status of the payment
+	 * @return void
+	 */
+	public function create_order( $payment_id, $status, $old_status ) {
+
+		if( 'completed' !== $status && 'pending' !== $old_status ) {
+			return; // Bail if this is not a new order
+		}
+
+		$payment = new EDD_Payment( $payment_id );
+		$order   = $this->build_order( $payment );
+		$order   = $this->api->createOrder( $order );
+
+	}
+
+	/**
+	 * Send a refunded order to TaxJar
+	 *
+	 * @since  1.1
+	 * @param  int    $payment_id The ID of the payment on which to store the tax jar data.
+	 * @param  string $status The new status of the payment
+	 * @param  string $old_status The previous status of the payment
+	 * @return void
+	 */
+	public function refund_order( $payment_id, $status, $old_status ) {
+
+		if( 'refunded' !== $status && 'completed' !== $old_status ) {
+			return; // Bail if this is not a newly refunded order
+		}
+
+		$payment = new EDD_Payment( $payment_id );
+		$order   = $this->build_order( $payment );
+		$refund  = $this->api->createRefund( $order );
+
+	}
+
+	/**
+	 * Deletes an order from TaxJar
+	 *
+	 * @since  1.1
+	 * @param  int    $payment_id The ID of the payment on which to store the tax jar data.
+	 * @return void
+	 */
+	public function delete_order( $payment_id ) {
+
+		$payment = new EDD_Payment( $payment_id );
+
+		if( 'refunded' == $payment->status ) {
+			$refund = $this->api->deleteRefund( $payment->transaction_id );
+		} else {
+			$refund = $this->api->deleteOrder( $payment->transaction_id );
+		}
+
+	}
+
+	/**
+	 * Converts an EDD_Payment object into an array in the format TaxJar expects
+	 *
+	 * @since  1.1
+	 * @param  object EDD_Payment $payment The EDD_Payment object to translate.
+	 * @return array
+	 */
+	private function build_order( EDD_Payment $payment ) {
+
+		// See if the order had shipping fees
+		$shipping_fee = 0.00;
+		if( ! empty( $payment->fees ) && is_array( $payment->fees ) ) {
+
+			foreach( $payment->fees as $fee ) {
+
+				if( false !== strpos( $fee['id'], 'simple_shipping_' ) ) {
+
+					$shipping_fee += $fee['amount'];
+
+				}
+
+			}
+
+		}
+
+		$line_items = array();
+
+		foreach( $payment->cart_details as $item ) {
+			$line_items[] = array(
+				'quantity'           => $item['quantity'],
+				'product_identifier' => $item['id'],
+				'description'        => $item['name'],
+				'unit_price'         => $item['price'],
+				'sales_tax'          => $item['tax']
+			);
+		}
+
+		$order = array(
+			'transaction_id'   => $payment->transaction_id,
+			'transaction_date' => $payment->completed_date,
+			'from_country'     => edd_get_option( 'base_country' ),
+			'from_state'       => edd_get_option( 'base_state' ),
+			'to_country'       => $payment->address['country'],
+			'to_zip'           => $payment->address['zip'],
+			'to_state'         => $payment->address['state'],
+			'to_city'          => $payment->address['city'],
+			'to_street'        => $payment->address['address'],
+			'amount'           => $payment->total - $payment->tax,
+			'shipping'         => $shipping_fee,
+			'sales_tax'        => $payment->tax,
+			'line_items'       => $line_items
+		);
+
+		return $order;
+	}
+
 }
 
 /**
