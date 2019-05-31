@@ -52,6 +52,7 @@ class EDD_TaxJar {
 		add_action( 'edd_payment_saved', array( $this, 'store_taxjar_data_on_payment' ), 10, 2 );
 		add_action( 'edd_update_payment_status', array( $this, 'create_order' ), 10, 3 );
 		add_action( 'edd_update_payment_status', array( $this, 'refund_order' ), 10, 3 );
+		add_action( 'edd_payment_saved', array( $this, 'update_order' ), 10, 2 );
 		add_action( 'edd_payment_delete', array( $this, 'delete_order' ), 10 );
 
 		$this->load_sdk();
@@ -251,6 +252,25 @@ class EDD_TaxJar {
 		$payment = new EDD_Payment( $payment_id );
 		$order   = $this->build_order( $payment );
 		$order   = $this->api->createOrder( $order );
+
+	}
+
+	/**
+	 * Update an order in TaxJar
+	 *
+	 * @since  1.1
+	 * @param  int         $payment_id The ID of the payment on which to store the tax jar data.
+	 * @param  EDD_Payment $payment The EDD Payment object.
+	 * @return void
+	 */
+	public function update_order( $payment_id, $payment ) {
+
+		if( 'completed' !== $payment->status ) {
+			return; // Bail if this is not an existing order
+		}
+
+		$order   = $this->build_order( $payment );
+		$order   = $this->api->updateOrder( $order );
 
 	}
 
