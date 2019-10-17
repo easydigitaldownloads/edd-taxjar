@@ -274,6 +274,10 @@ class EDD_TaxJar {
 			return; // Bail if this is not an existing order
 		}
 
+		if( empty( $payment->tax ) || $payment->tax <= 0 ) {
+			return;
+		}
+
 		$order   = $this->build_order( $payment );
 		$order   = $this->api->updateOrder( $order );
 
@@ -295,6 +299,11 @@ class EDD_TaxJar {
 		}
 
 		$payment = new EDD_Payment( $payment_id );
+
+		if( empty( $payment->tax ) || $payment->tax <= 0 ) {
+			return;
+		}
+
 		$order   = $this->build_order( $payment );
 		$refund  = $this->api->createRefund( $order );
 
@@ -310,6 +319,10 @@ class EDD_TaxJar {
 	public function delete_order( $payment_id ) {
 
 		$payment = new EDD_Payment( $payment_id );
+
+		if( empty( $payment->tax ) || $payment->tax <= 0 ) {
+			return;
+		}
 
 		if( 'refunded' == $payment->status ) {
 			$refund = $this->api->deleteRefund( $payment->transaction_id );
