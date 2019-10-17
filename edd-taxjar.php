@@ -346,26 +346,28 @@ class EDD_TaxJar {
 				'quantity'           => $item['quantity'],
 				'product_identifier' => $item['id'],
 				'description'        => $item['name'],
-				'unit_price'         => $item['price'],
+				'unit_price'         => $item['price'] - $item['tax'],
 				'sales_tax'          => $item['tax']
 			);
 		}
 
 		$order = array(
-			'transaction_id'   => $payment->transaction_id,
-			'transaction_date' => $payment->completed_date,
-			'from_country'     => edd_get_option( 'base_country' ),
-			'from_state'       => edd_get_option( 'base_state' ),
+			'transaction_id'   => $payment->ID,
+			'transaction_date' => $payment->date,
+			'from_country'     => edd_get_option( 'base_country', 'US' ),
+			'from_state'       => edd_get_option( 'base_state', 'KS' ),
 			'to_country'       => $payment->address['country'],
 			'to_zip'           => $payment->address['zip'],
 			'to_state'         => $payment->address['state'],
 			'to_city'          => $payment->address['city'],
-			'to_street'        => $payment->address['address'],
+			'to_street'        => $payment->address['address']['line1'],
 			'amount'           => $payment->total - $payment->tax,
 			'shipping'         => $shipping_fee,
 			'sales_tax'        => $payment->tax,
 			'line_items'       => $line_items
 		);
+
+		//echo '<pre>'; var_dump( $order ); echo '</pre>';exit;
 
 		return $order;
 	}
