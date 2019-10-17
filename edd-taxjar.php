@@ -367,8 +367,6 @@ class EDD_TaxJar {
 			'line_items'       => $line_items
 		);
 
-		//echo '<pre>'; var_dump( $order ); echo '</pre>';exit;
-
 		return $order;
 	}
 
