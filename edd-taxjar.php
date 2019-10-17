@@ -370,7 +370,7 @@ class EDD_TaxJar {
 		}
 
 		$order = array(
-			'transaction_id'   => $payment->ID,
+			'transaction_id'   => ! empty( $payment->transaction_id ) ? $payment->transaction_id : $payment->ID,
 			'transaction_date' => $payment->date,
 			'from_country'     => edd_get_option( 'base_country', 'US' ),
 			'from_state'       => edd_get_option( 'base_state', 'KS' ),
