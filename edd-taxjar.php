@@ -250,6 +250,11 @@ class EDD_TaxJar {
 		}
 
 		$payment = new EDD_Payment( $payment_id );
+		
+		if( empty( $payment->tax ) || $payment->tax <= 0 ) {
+			return;
+		}
+
 		$order   = $this->build_order( $payment );
 		$order   = $this->api->createOrder( $order );
 
