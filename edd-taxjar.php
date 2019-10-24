@@ -207,7 +207,7 @@ class EDD_TaxJar {
 				}
 			} catch ( Exception $e ) {
 
-				edd_debug_log( 'TaxJar API Exception: ' . $e->getMessage() );
+				edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
 
 			}
 		}
@@ -255,8 +255,17 @@ class EDD_TaxJar {
 			return;
 		}
 
-		$order   = $this->build_order( $payment );
-		$order   = $this->api->createOrder( $order );
+		try {
+	
+			$order   = $this->build_order( $payment );
+			$order   = $this->api->createOrder( $order );
+
+		} catch ( Exception $e ) {
+		
+			edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
+
+		}
+
 
 	}
 
@@ -278,8 +287,16 @@ class EDD_TaxJar {
 			return;
 		}
 
-		$order   = $this->build_order( $payment );
-		$order   = $this->api->updateOrder( $order );
+		try {
+	
+			$order   = $this->build_order( $payment );
+			$order   = $this->api->updateOrder( $order );
+
+		} catch ( Exception $e ) {
+		
+			edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
+
+		}
 
 	}
 
@@ -304,12 +321,20 @@ class EDD_TaxJar {
 			return;
 		}
 
-		$order   = $this->build_order( $payment );
+		try {
 
-		$order['transaction_id'] = $payment->transaction_id . '-refund';
-		$order['transaction_reference_id'] = $payment->transaction_id;
+			$order   = $this->build_order( $payment );
 
-		$refund  = $this->api->createRefund( $order );
+			$order['transaction_id'] = $payment->transaction_id . '-refund';
+			$order['transaction_reference_id'] = $payment->transaction_id;
+
+			$refund  = $this->api->createRefund( $order );
+
+		} catch ( Exception $e ) {
+		
+			edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
+
+		}
 
 	}
 
@@ -332,7 +357,16 @@ class EDD_TaxJar {
 			$refund = $this->api->deleteRefund( $payment->transaction_id . '-refund' );
 		}
 		
-		$refund = $this->api->deleteOrder( $payment->transaction_id );
+
+		try {
+
+			$refund = $this->api->deleteOrder( $payment->transaction_id );
+
+		} catch ( Exception $e ) {
+		
+			edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
+
+		}
 
 	}
 
