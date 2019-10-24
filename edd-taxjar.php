@@ -245,7 +245,7 @@ class EDD_TaxJar {
 	 */
 	public function create_order( $payment_id, $status, $old_status ) {
 
-		if( 'completed' !== $status && 'pending' !== $old_status ) {
+		if( 'completed' !== $status && 'edd_subscription' !== $status && 'pending' !== $old_status ) {
 			return; // Bail if this is not a new order
 		}
 
