@@ -207,7 +207,7 @@ class EDD_TaxJar {
 				}
 			} catch ( Exception $e ) {
 
-				edd_debug_log( 'TaxJar API Exception: ' . $e->getMessage() );
+				edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
 
 			}
 		}
@@ -250,8 +250,22 @@ class EDD_TaxJar {
 		}
 
 		$payment = new EDD_Payment( $payment_id );
-		$order   = $this->build_order( $payment );
-		$order   = $this->api->createOrder( $order );
+
+		if( empty( $payment->tax ) || $payment->tax <= 0 ) {
+			return;
+		}
+
+		try {
+
+			$order   = $this->build_order( $payment );
+			$order   = $this->api->createOrder( $order );
+
+		} catch ( Exception $e ) {
+
+			edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
+
+		}
+
 
 	}
 
@@ -269,8 +283,20 @@ class EDD_TaxJar {
 			return; // Bail if this is not an existing order
 		}
 
-		$order   = $this->build_order( $payment );
-		$order   = $this->api->updateOrder( $order );
+		if( empty( $payment->tax ) || $payment->tax <= 0 ) {
+			return;
+		}
+
+		try {
+
+			$order   = $this->build_order( $payment );
+			$order   = $this->api->updateOrder( $order );
+
+		} catch ( Exception $e ) {
+
+			edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
+
+		}
 
 	}
 
@@ -290,8 +316,25 @@ class EDD_TaxJar {
 		}
 
 		$payment = new EDD_Payment( $payment_id );
-		$order   = $this->build_order( $payment );
-		$refund  = $this->api->createRefund( $order );
+
+		if( empty( $payment->tax ) || $payment->tax <= 0 ) {
+			return;
+		}
+
+		try {
+
+			$order   = $this->build_order( $payment );
+
+			$order['transaction_id'] = $payment->transaction_id . '-refund';
+			$order['transaction_reference_id'] = $payment->transaction_id;
+
+			$refund  = $this->api->createRefund( $order );
+
+		} catch ( Exception $e ) {
+
+			edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
+
+		}
 
 	}
 
@@ -306,10 +349,23 @@ class EDD_TaxJar {
 
 		$payment = new EDD_Payment( $payment_id );
 
+		if( empty( $payment->tax ) || $payment->tax <= 0 ) {
+			return;
+		}
+
 		if( 'refunded' == $payment->status ) {
-			$refund = $this->api->deleteRefund( $payment->transaction_id );
-		} else {
+			$refund = $this->api->deleteRefund( $payment->transaction_id . '-refund' );
+		}
+
+
+		try {
+
 			$refund = $this->api->deleteOrder( $payment->transaction_id );
+
+		} catch ( Exception $e ) {
+
+			edd_debug_log( 'TaxJar API Exception: ' . $e->getCode() . ' ' . $e->getMessage() );
+
 		}
 
 	}
@@ -346,21 +402,21 @@ class EDD_TaxJar {
 				'quantity'           => $item['quantity'],
 				'product_identifier' => $item['id'],
 				'description'        => $item['name'],
-				'unit_price'         => $item['price'],
+				'unit_price'         => $item['price'] - $item['tax'],
 				'sales_tax'          => $item['tax']
 			);
 		}
 
 		$order = array(
-			'transaction_id'   => $payment->transaction_id,
-			'transaction_date' => $payment->completed_date,
-			'from_country'     => edd_get_option( 'base_country' ),
-			'from_state'       => edd_get_option( 'base_state' ),
+			'transaction_id'   => ! empty( $payment->transaction_id ) ? $payment->transaction_id : $payment->ID,
+			'transaction_date' => $payment->date,
+			'from_country'     => edd_get_option( 'base_country', 'US' ),
+			'from_state'       => edd_get_option( 'base_state', 'KS' ),
 			'to_country'       => $payment->address['country'],
 			'to_zip'           => $payment->address['zip'],
 			'to_state'         => $payment->address['state'],
 			'to_city'          => $payment->address['city'],
-			'to_street'        => $payment->address['address'],
+			'to_street'        => $payment->address['address']['line1'],
 			'amount'           => $payment->total - $payment->tax,
 			'shipping'         => $shipping_fee,
 			'sales_tax'        => $payment->tax,
