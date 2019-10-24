@@ -279,7 +279,7 @@ class EDD_TaxJar {
 	 */
 	public function update_order( $payment_id, $payment ) {
 
-		if( 'completed' !== $payment->status && 'publish' !== $payment->status ) {
+		if( 'complete' !== $payment->status && 'publish' !== $payment->status ) {
 			return; // Bail if this is not an existing order
 		}
 
