@@ -329,10 +329,10 @@ class EDD_TaxJar {
 		}
 
 		if( 'refunded' == $payment->status ) {
-			$refund = $this->api->deleteRefund( $payment->transaction_id );
-		} else {
-			$refund = $this->api->deleteOrder( $payment->transaction_id );
+			$refund = $this->api->deleteRefund( $payment->transaction_id . '-refund' );
 		}
+		
+		$refund = $this->api->deleteOrder( $payment->transaction_id );
 
 	}
 
