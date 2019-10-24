@@ -305,6 +305,10 @@ class EDD_TaxJar {
 		}
 
 		$order   = $this->build_order( $payment );
+
+		$order['transaction_id'] = $payment->transaction_id . '-refund';
+		$order['transaction_reference_id'] = $payment->transaction_id;
+
 		$refund  = $this->api->createRefund( $order );
 
 	}
