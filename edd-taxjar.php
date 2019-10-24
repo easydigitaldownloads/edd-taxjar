@@ -290,7 +290,6 @@ class EDD_TaxJar {
 		try {
 	
 			$order   = $this->build_order( $payment );
-
 			$order   = $this->api->updateOrder( $order );
 
 		} catch ( Exception $e ) {
