@@ -124,6 +124,16 @@ class EDD_TaxJar {
 				'desc' => __( 'Enter your TaxJar API Token' ),
 				'type' => 'text',
 			),
+			array(
+				'id'      => 'edd_taxjar_states',
+				'name'    => __( 'Taxed States', 'edd-taxjar' ),
+				'desc'    => __( 'Select the states from which you need to collect sales tax. Leave blank to collect tax in all states.' ),
+				'type'    => 'select',
+				'options' => edd_get_states_list(),
+				'chosen'  => true,
+				'multiple'=> true,
+				'placeholder' => __( 'Select one or more states', 'edd-taxjar' )
+			),
 		);
 
 		if ( version_compare( EDD_VERSION, 2.5, '>=' ) ) {
@@ -169,7 +179,8 @@ class EDD_TaxJar {
 
 		global $edd_taxjar;
 
-		$zip = isset( $_POST['card_zip'] ) ? sanitize_text_field( wp_unslash( $_POST['card_zip'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		$tax_states = edd_get_option( 'edd_taxjar_states', array() );
+		$zip        = isset( $_POST['card_zip'] ) ? sanitize_text_field( wp_unslash( $_POST['card_zip'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
 
 		if ( ! empty( $zip ) ) {
 
@@ -181,7 +192,12 @@ class EDD_TaxJar {
 			if ( ! empty( $edd_taxjar ) ) {
 
 				if ( $zip === $edd_taxjar->zip && $country === $edd_taxjar->country ) {
-					return $edd_taxjar->combined_rate;
+
+					if( empty( $tax_states ) || in_array( $edd_taxjar->state, $tax_states ) ) {
+
+						return $edd_taxjar->combined_rate;
+
+					}
 				}
 			}
 
@@ -202,8 +218,11 @@ class EDD_TaxJar {
 
 					edd_debug_log( 'TaxJar API Response: ' . var_export( $rates, true ) ); //phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_var_export
 
-					return $rates->combined_rate;
+					if( empty( $tax_states ) || in_array( $rates->state, $tax_states ) ) {
 
+						return $rates->combined_rate;
+
+					}
 				}
 			} catch ( Exception $e ) {
 
